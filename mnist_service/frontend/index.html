@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MNIST Digit Console</title>
+    <style>
+      :root {
+        --ink: #111111;
+        --muted: #64615b;
+        --paper: #f7f2e8;
+        --panel: #fffaf0;
+        --line: #1f1d1a;
+        --accent: #006d77;
+        --accent-2: #d95d39;
+        --good: #177245;
+        --bad: #b3261e;
+        --shadow: 10px 10px 0 #1f1d1a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(90deg, rgba(31, 29, 26, 0.06) 1px, transparent 1px),
+          linear-gradient(rgba(31, 29, 26, 0.06) 1px, transparent 1px),
+          var(--paper);
+        background-size: 24px 24px;
+        color: var(--ink);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100vw - 32px));
+        margin: 28px auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 680px;
+        font-size: clamp(36px, 6vw, 76px);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 170px;
+        padding: 12px 14px;
+        border: 2px solid var(--line);
+        background: var(--panel);
+        box-shadow: 5px 5px 0 var(--line);
+        font-weight: 700;
+      }
+
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--line);
+        background: var(--muted);
+      }
+
+      .status[data-state="ok"] .status-dot {
+        background: var(--good);
+      }
+
+      .status[data-state="error"] .status-dot {
+        background: var(--bad);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 420px) 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 2px solid var(--line);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 18px;
+        border-bottom: 2px solid var(--line);
+        background: #f0d9b5;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .panel-body {
+        padding: 18px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .api-row {
+        display: grid;
+        grid-template-columns: 1fr 86px;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      input[type="url"],
+      input[type="text"] {
+        width: 100%;
+        min-width: 0;
+        padding: 12px;
+        border: 2px solid var(--line);
+        background: #ffffff;
+        color: var(--ink);
+        outline: none;
+      }
+
+      input[type="url"]:focus,
+      input[type="text"]:focus {
+        border-color: var(--accent);
+      }
+
+      .dropzone {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 250px;
+        border: 2px dashed var(--line);
+        background: #fffdf7;
+        cursor: pointer;
+        transition: transform 120ms ease, background 120ms ease;
+      }
+
+      .dropzone:hover,
+      .dropzone.is-dragging {
+        transform: translate(-2px, -2px);
+        background: #e9f5f3;
+      }
+
+      .dropzone input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .upload-copy {
+        padding: 24px;
+        text-align: center;
+      }
+
+      .upload-mark {
+        display: inline-grid;
+        place-items: center;
+        width: 72px;
+        height: 72px;
+        margin-bottom: 14px;
+        border: 2px solid var(--line);
+        background: var(--accent);
+        color: white;
+        font-size: 40px;
+        font-weight: 800;
+        box-shadow: 5px 5px 0 var(--line);
+      }
+
+      .preview {
+        display: none;
+        width: 100%;
+        max-height: 250px;
+        object-fit: contain;
+        background: #111111;
+      }
+
+      .dropzone.has-image .upload-copy {
+        display: none;
+      }
+
+      .dropzone.has-image .preview {
+        display: block;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      button {
+        min-height: 46px;
+        border: 2px solid var(--line);
+        background: #ffffff;
+        color: var(--ink);
+        cursor: pointer;
+        font-weight: 800;
+        box-shadow: 4px 4px 0 var(--line);
+      }
+
+      button.primary {
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+        box-shadow: none;
+      }
+
+      .result-hero {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        min-height: 240px;
+      }
+
+      .digit {
+        display: grid;
+        place-items: center;
+        border-right: 2px solid var(--line);
+        background: var(--accent-2);
+        color: #ffffff;
+        font-size: 150px;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .metrics {
+        display: grid;
+        align-content: center;
+        gap: 18px;
+        padding: 24px;
+      }
+
+      .metric-label {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .metric-value {
+        font-size: 42px;
+        font-weight: 900;
+      }
+
+      .bars {
+        display: grid;
+        gap: 10px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 32px 1fr 62px;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .bar-track {
+        height: 22px;
+        border: 2px solid var(--line);
+        background: #fffaf0;
+      }
+
+      .bar-fill {
+        height: 100%;
+        width: 0;
+        background: var(--muted);
+        transition: width 300ms ease;
+      }
+
+      .bar-row.is-top .bar-fill {
+        background: var(--accent);
+      }
+
+      .message {
+        min-height: 22px;
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .message.error {
+        color: var(--bad);
+        font-weight: 700;
+      }
+
+      @media (max-width: 860px) {
+        .topbar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .grid,
+        .result-hero {
+          grid-template-columns: 1fr;
+        }
+
+        .digit {
+          min-height: 180px;
+          border-right: 0;
+          border-bottom: 2px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <h1>MNIST Digit Console</h1>
+        <div class="status" id="statusBadge" data-state="idle">
+          <span class="status-dot"></span>
+          <span id="statusText">未连接</span>
+        </div>
+      </header>
+
+      <section class="grid">
+        <aside class="panel">
+          <div class="panel-header">
+            <span>Input</span>
+            <span>PNG / JPG</span>
+          </div>
+          <div class="panel-body">
+            <label for="apiBase">服务地址</label>
+            <div class="api-row">
+              <input id="apiBase" type="url" value="http://127.0.0.1" />
+              <input id="apiPort" type="text" value="8000" inputmode="numeric" />
+            </div>
+
+            <label for="fileInput">手写数字图片</label>
+            <div class="dropzone" id="dropzone">
+              <input id="fileInput" type="file" accept="image/*" />
+              <img class="preview" id="preview" alt="上传图片预览" />
+              <div class="upload-copy">
+                <div class="upload-mark">+</div>
+                <strong>选择或拖入图片</strong>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button id="healthButton" type="button">检查服务</button>
+              <button id="predictButton" class="primary" type="button" disabled>开始识别</button>
+            </div>
+            <div class="message" id="message"></div>
+          </div>
+        </aside>
+
+        <section class="panel">
+          <div class="panel-header">
+            <span>Result</span>
+            <span id="latency">-- ms</span>
+          </div>
+          <div class="result-hero">
+            <div class="digit" id="prediction">?</div>
+            <div class="metrics">
+              <div>
+                <div class="metric-label">Confidence</div>
+                <div class="metric-value" id="confidence">--%</div>
+              </div>
+              <div class="bars" id="bars"></div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const apiBaseInput = document.querySelector("#apiBase");
+      const apiPortInput = document.querySelector("#apiPort");
+      const fileInput = document.querySelector("#fileInput");
+      const dropzone = document.querySelector("#dropzone");
+      const preview = document.querySelector("#preview");
+      const healthButton = document.querySelector("#healthButton");
+      const predictButton = document.querySelector("#predictButton");
+      const statusBadge = document.querySelector("#statusBadge");
+      const statusText = document.querySelector("#statusText");
+      const message = document.querySelector("#message");
+      const prediction = document.querySelector("#prediction");
+      const confidence = document.querySelector("#confidence");
+      const latency = document.querySelector("#latency");
+      const bars = document.querySelector("#bars");
+
+      let selectedFile = null;
+
+      function getApiUrl(path) {
+        const base = apiBaseInput.value.trim().replace(/\/+$/, "");
+        const port = apiPortInput.value.trim();
+        if (!base) {
+          throw new Error("请填写服务地址");
+        }
+        return `${base}${port ? `:${port}` : ""}${path}`;
+      }
+
+      function setStatus(state, text) {
+        statusBadge.dataset.state = state;
+        statusText.textContent = text;
+      }
+
+      function setMessage(text, isError = false) {
+        message.textContent = text;
+        message.classList.toggle("error", isError);
+      }
+
+      function renderBars(probabilities = {}, topDigit = null) {
+        bars.innerHTML = "";
+        for (let digit = 0; digit <= 9; digit += 1) {
+          const value = Number(probabilities[String(digit)] || 0);
+          const row = document.createElement("div");
+          row.className = `bar-row${String(topDigit) === String(digit) ? " is-top" : ""}`;
+          row.innerHTML = `
+            <strong>${digit}</strong>
+            <div class="bar-track"><div class="bar-fill" style="width: ${(value * 100).toFixed(2)}%"></div></div>
+            <span>${(value * 100).toFixed(1)}%</span>
+          `;
+          bars.appendChild(row);
+        }
+      }
+
+      function selectFile(file) {
+        if (!file) {
+          return;
+        }
+        if (!file.type.startsWith("image/")) {
+          setMessage("请选择图片文件", true);
+          return;
+        }
+        selectedFile = file;
+        preview.src = URL.createObjectURL(file);
+        dropzone.classList.add("has-image");
+        predictButton.disabled = false;
+        setMessage(file.name);
+      }
+
+      async function checkHealth() {
+        try {
+          setStatus("idle", "检查中");
+          const response = await fetch(getApiUrl("/health"));
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          const data = await response.json();
+          setStatus(data.model_loaded ? "ok" : "error", data.model_loaded ? "已连接" : "模型未加载");
+          setMessage("服务可用");
+        } catch (error) {
+          setStatus("error", "连接失败");
+          setMessage(error.message, true);
+        }
+      }
+
+      async function predictDigit() {
+        if (!selectedFile) {
+          setMessage("请先选择图片", true);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        try {
+          predictButton.disabled = true;
+          setMessage("识别中...");
+          const startedAt = performance.now();
+          const response = await fetch(getApiUrl("/predict"), {
+            method: "POST",
+            body: formData,
+          });
+          const elapsed = Math.round(performance.now() - startedAt);
+          latency.textContent = `${elapsed} ms`;
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || `HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          prediction.textContent = data.prediction;
+          confidence.textContent = `${(Number(data.confidence) * 100).toFixed(2)}%`;
+          renderBars(data.probabilities, data.prediction);
+          setStatus("ok", "已连接");
+          setMessage("识别完成");
+        } catch (error) {
+          setStatus("error", "请求失败");
+          setMessage(error.message, true);
+        } finally {
+          predictButton.disabled = !selectedFile;
+        }
+      }
+
+      fileInput.addEventListener("change", () => selectFile(fileInput.files[0]));
+      healthButton.addEventListener("click", checkHealth);
+      predictButton.addEventListener("click", predictDigit);
+
+      dropzone.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        dropzone.classList.add("is-dragging");
+      });
+
+      dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("is-dragging");
+      });
+
+      dropzone.addEventListener("drop", (event) => {
+        event.preventDefault();
+        dropzone.classList.remove("is-dragging");
+        selectFile(event.dataTransfer.files[0]);
+      });
+
+      renderBars();
+    </script>
+  </body>
+</html>
