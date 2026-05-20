@@ -1,5 +1,7 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from inference import DigitPredictor
 
@@ -17,6 +19,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 predictor = DigitPredictor()
+
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+@app.get("/")
+def index():
+    return FileResponse("frontend/index.html")
 
 
 @app.get("/health")

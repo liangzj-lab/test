@@ -10,6 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py inference.py model.py ./
+COPY frontend ./frontend
 RUN mkdir -p /app/models
 
 EXPOSE 8000

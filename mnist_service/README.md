@@ -88,6 +88,12 @@ cd mnist_service
 然后在浏览器中打开：
 
 ```text
+http://127.0.0.1:8000/
+```
+
+也可以直接打开本地静态文件：
+
+```text
 frontend/index.html
 ```
 
